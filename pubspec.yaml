@@ -1,5 +1,5 @@
 name: big_decimal
-description: Implementação próxima do equivalente ao BigDecimal em Java, adaptada para Dart.
+description: Implementation close to the equivalent of BigDecimal in Java, adapted for Dart.
 version: 0.0.1
 
 environment:
