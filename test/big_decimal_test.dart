@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:big_decimal/big_decimal.dart';
+import 'package:big_decimal/src/big_decimal.dart';
 
 void main() {
   test('adds one to input values', () {
