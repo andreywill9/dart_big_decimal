@@ -2,6 +2,7 @@ library big_decimal;
 
 import 'dart:math';
 
+import 'package:big_decimal/rounding_mode.dart';
 import 'package:decimal/decimal.dart';
 
 class BigDecimal {
@@ -17,7 +18,7 @@ class BigDecimal {
   
   static BigDecimal fromDouble(double valor) => BigDecimal._(Decimal.parse(valor.toString()));
 
-  static BigDecimal _halfEven(Decimal value, int decimalPlaces) {
+  static BigDecimal _roundHalfEven(Decimal value, int decimalPlaces) {
     Decimal integralPart = value.truncate();
     Decimal fractionalPart = _getFractionalPart(value);
     int nextToLast = (fractionalPart * _powOfTen(decimalPlaces + 1) % Decimal.fromInt(10)).toInt();
@@ -35,7 +36,7 @@ class BigDecimal {
 
   static Decimal _powOfTen(int value) => Decimal.parse(pow(10, value).toString());
 
-  static Decimal _getFractionalPart(Decimal value) => value - value.floor();
+  static Decimal _getFractionalPart(Decimal value) => value - value.truncate();
 
   static Decimal _carryLatest(Decimal value, int decimalPlaces) {
     int amount = value == Decimal.zero
@@ -45,14 +46,14 @@ class BigDecimal {
     return value + offset;
   }
 
-  BigDecimal multiply(BigDecimal secondValue, [int decimalPlaces = 2]) {
+  BigDecimal multiply(BigDecimal secondValue, RoundingMode roundingMode, [int decimalPlaces = 2]) {
     Decimal result = _value * secondValue._value;
-    return _halfEven(result, decimalPlaces);
+    return BigDecimal._(result).round(roundingMode, decimalPlaces);
   }
 
-  BigDecimal divide(BigDecimal secondValue, [int decimalPlaces = 2]) {
+  BigDecimal divide(BigDecimal secondValue, RoundingMode roundingMode, [int decimalPlaces = 2]) {
     Decimal result = _value / secondValue._value;
-    return _halfEven(result, decimalPlaces);
+    return BigDecimal._(result).round(roundingMode, decimalPlaces);
   }
 
   BigDecimal add(BigDecimal secondValue) {
@@ -65,9 +66,9 @@ class BigDecimal {
     return BigDecimal._(result);
   }
 
-  BigDecimal getPercentage(BigDecimal percentage, [int decimalPlaces = 2]) {
+  BigDecimal getPercentage(BigDecimal percentage, RoundingMode roundingMode, [int decimalPlaces = 2]) {
     Decimal multiplicacao = _value * percentage._value;
-    return BigDecimal._(multiplicacao).divide(ONE_HUNDRED, decimalPlaces);
+    return BigDecimal._(multiplicacao).divide(ONE_HUNDRED, roundingMode, decimalPlaces);
   }
 
   BigDecimal remainder(BigDecimal secondValue) => BigDecimal._(_value % secondValue._value);
@@ -86,7 +87,20 @@ class BigDecimal {
 
   BigDecimal abs() => BigDecimal._(_value.abs());
 
-  BigDecimal power(int exponent, [int decimalPlaces = 2]) => _halfEven(_value.pow(exponent), decimalPlaces);
+  BigDecimal power(int exponent, RoundingMode roundingMode, [int decimalPlaces = 2]) {
+    Decimal result = _value.pow(exponent);
+    return BigDecimal._(result).round(roundingMode, decimalPlaces);
+  }
+
+  BigDecimal round(RoundingMode mode, int decimalPlaces) {
+    switch (mode) {
+      case RoundingMode.HALF_EVEN:
+        return _roundHalfEven(_value, decimalPlaces);
+      default:
+      // NOT IMPLEMENTED YET
+        return this;
+    }
+  }
   
   int compareTo(BigDecimal secondValue) => _value.compareTo(secondValue._value);
 

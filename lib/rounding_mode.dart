@@ -1,0 +1,9 @@
+enum RoundingMode {
+  ROUND_CEILING,
+  ROUND_DOWN,
+  ROUND_FLOOR,
+  HALF_DOWN,
+  HALF_EVEN,
+  HALF_UP,
+  ROUND_UP
+}
