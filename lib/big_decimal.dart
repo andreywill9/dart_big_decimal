@@ -74,6 +74,22 @@ class BigDecimal {
 
   BigDecimal divideToIntegralValue(BigDecimal secondValue) => BigDecimal._(_value ~/ secondValue._value);
 
+  BigDecimal negate() => BigDecimal._(-_value);
+
+  BigDecimal max(BigDecimal secondValue) => secondValue._value > _value ? secondValue : this;
+
+  BigDecimal min(BigDecimal secondValue) => secondValue._value < _value ? secondValue : this;
+
+  BigDecimal movePointToLeft(int places) => BigDecimal._(_value * (_powOfTen(places * -1)));
+
+  BigDecimal movePointToRight(int places) => BigDecimal._(_value * (_powOfTen(places)));
+
+  BigDecimal abs() => BigDecimal._(_value.abs());
+
+  BigDecimal power(int exponent, [int decimalPlaces = 2]) => _halfEven(_value.pow(exponent), decimalPlaces);
+  
+  int compareTo(BigDecimal secondValue) => _value.compareTo(secondValue._value);
+
   bool operator >(BigDecimal secondValue) => _value > secondValue._value;
 
   bool operator <(BigDecimal secondValue) => _value < secondValue._value;
