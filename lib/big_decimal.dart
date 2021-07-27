@@ -5,104 +5,97 @@ import 'dart:math';
 import 'package:decimal/decimal.dart';
 
 class BigDecimal {
-  final Decimal _valor;
+  final Decimal _value;
 
-  static final BigDecimal ZERO = instanciar(0);
+  static final BigDecimal ZERO = fromDouble(0);
 
-  static final BigDecimal UM = instanciar(1);
+  static final BigDecimal ONE = fromDouble(1);
 
-  static final BigDecimal DEZ = instanciar(10);
+  static final BigDecimal TEN = fromDouble(10);
 
-  static final BigDecimal CEM = instanciar(100);
+  static final BigDecimal ONE_HUNDRED = fromDouble(100);
+  
+  static BigDecimal fromDouble(double valor) => BigDecimal._(Decimal.parse(valor.toString()));
 
-  static BigDecimal instanciar(double valor) => BigDecimal._(Decimal.parse(valor.toString()));
-
-  static BigDecimal _arredondamentoHalfEven(Decimal numero, int casasDecimais) {
-    Decimal parteInteira = numero.floor();
-    Decimal parteDecimal = _obterParteDecimal(numero);
-    int seguinteAoUltimo = (parteDecimal * _potenciaDe10(casasDecimais + 1) % Decimal.fromInt(10)).toInt();
-    Decimal multiploParteDecimal = _potenciaDe10(casasDecimais);
-    Decimal parteDecimalArredondada = ((parteDecimal * multiploParteDecimal).floor() / multiploParteDecimal);
-    bool possuiAlgarismosRestantes = _obterParteDecimal(parteDecimal * _potenciaDe10(casasDecimais + 1)) != Decimal.zero;
-    if (seguinteAoUltimo < 5) return BigDecimal._(parteInteira + parteDecimalArredondada);
-    if (seguinteAoUltimo > 5 || possuiAlgarismosRestantes) parteDecimalArredondada = _somarUmDecimal(parteDecimalArredondada, casasDecimais);
+  static BigDecimal _halfEven(Decimal value, int decimalPlaces) {
+    Decimal integralPart = value.truncate();
+    Decimal fractionalPart = _getFractionalPart(value);
+    int nextToLast = (fractionalPart * _powOfTen(decimalPlaces + 1) % Decimal.fromInt(10)).toInt();
+    Decimal fractionalMultiple = _powOfTen(decimalPlaces);
+    Decimal roundedFractionalPart = ((fractionalPart * fractionalMultiple).floor() / fractionalMultiple);
+    bool hasRemainder = _getFractionalPart(fractionalPart * _powOfTen(decimalPlaces + 1)) != Decimal.zero;
+    if (nextToLast < 5) return BigDecimal._(integralPart + roundedFractionalPart);
+    if (nextToLast > 5 || hasRemainder) roundedFractionalPart = _carryLatest(roundedFractionalPart, decimalPlaces);
     else {
-      int ultimoConservado = (parteDecimal * _potenciaDe10(casasDecimais) % Decimal.fromInt(10)).toInt();
-      if (ultimoConservado.isOdd) parteDecimalArredondada = _somarUmDecimal(parteDecimalArredondada, casasDecimais);
+      int lastConserved = (fractionalPart * _powOfTen(decimalPlaces) % Decimal.fromInt(10)).toInt();
+      if (lastConserved.isOdd) roundedFractionalPart = _carryLatest(roundedFractionalPart, decimalPlaces);
     }
-    return BigDecimal._(parteInteira + parteDecimalArredondada);
+    return BigDecimal._(integralPart + roundedFractionalPart);
   }
 
-  static Decimal _potenciaDe10(int numero) => Decimal.parse(pow(10, numero).toString());
+  static Decimal _powOfTen(int value) => Decimal.parse(pow(10, value).toString());
 
-  static Decimal _obterParteDecimal(Decimal numero) => numero - numero.floor();
+  static Decimal _getFractionalPart(Decimal value) => value - value.floor();
 
-  static Decimal _somarUmDecimal(Decimal numero, int casasDecimais) {
-    int quantidadeDigitos = numero == Decimal.zero
-        ? casasDecimais
-        : numero.toString().length - 2;
-    Decimal deslocamento = _potenciaDe10(-quantidadeDigitos);
-    return numero + deslocamento;
+  static Decimal _carryLatest(Decimal value, int decimalPlaces) {
+    int amount = value == Decimal.zero
+        ? decimalPlaces
+        : value.toString().length - 2;
+    Decimal offset = _powOfTen(-amount);
+    return value + offset;
   }
 
-  BigDecimal multiplicar(BigDecimal segundoNumero, [int casasDecimais = 2]) {
-    Decimal resultado = _valor * segundoNumero._valor;
-    return _arredondamentoHalfEven(resultado, casasDecimais);
+  BigDecimal multiply(BigDecimal secondValue, [int decimalPlaces = 2]) {
+    Decimal result = _value * secondValue._value;
+    return _halfEven(result, decimalPlaces);
   }
 
-  BigDecimal dividir(BigDecimal segundoNumero, [int casasDecimais = 2]) {
-    Decimal resultado = _valor / segundoNumero._valor;
-    return _arredondamentoHalfEven(resultado, casasDecimais);
+  BigDecimal divide(BigDecimal secondValue, [int decimalPlaces = 2]) {
+    Decimal result = _value / secondValue._value;
+    return _halfEven(result, decimalPlaces);
   }
 
-  BigDecimal somar(BigDecimal segundoNumero) {
-    Decimal resultado = _valor + segundoNumero._valor;
-    return BigDecimal._(resultado);
+  BigDecimal add(BigDecimal secondValue) {
+    Decimal result = _value + secondValue._value;
+    return BigDecimal._(result);
   }
 
-  BigDecimal subtrair(BigDecimal segundoNumero) {
-    Decimal resultado = _valor - segundoNumero._valor;
-    return BigDecimal._(resultado);
+  BigDecimal subtract(BigDecimal secondValue) {
+    Decimal result = _value - secondValue._value;
+    return BigDecimal._(result);
   }
 
-  BigDecimal obterPorcentagem(BigDecimal porcentagem, [int casasDecimais = 2]) {
-    Decimal multiplicacao = _valor * porcentagem._valor;
-    return BigDecimal._(multiplicacao).dividir(CEM, casasDecimais);
+  BigDecimal getPercentage(BigDecimal percentage, [int decimalPlaces = 2]) {
+    Decimal multiplicacao = _value * percentage._value;
+    return BigDecimal._(multiplicacao).divide(ONE_HUNDRED, decimalPlaces);
   }
 
-  BigDecimal obterPorcentagemDe(BigDecimal segundoNumero, [int casasDecimais = 2]) {
-    Decimal divisao = _valor / segundoNumero._valor;
-    return BigDecimal._(divisao).multiplicar(CEM, casasDecimais);
-  }
+  BigDecimal remainder(BigDecimal secondValue) => BigDecimal._(_value % secondValue._value);
 
-  BigDecimal modulo(BigDecimal segundoNumero) => BigDecimal._(_valor % segundoNumero._valor);
+  BigDecimal divideToIntegralValue(BigDecimal secondValue) => BigDecimal._(_value ~/ secondValue._value);
 
-  BigDecimal divisaoInteira(BigDecimal segundoNumero) => BigDecimal._(_valor ~/ segundoNumero._valor);
+  bool operator >(BigDecimal secondValue) => _value > secondValue._value;
 
-  bool divisivelPor(BigDecimal segundoNumero) => modulo(segundoNumero) == ZERO;
+  bool operator <(BigDecimal secondValue) => _value < secondValue._value;
 
-  BigDecimal._(this._valor);
+  bool operator >=(BigDecimal secondValue) => _value >= secondValue._value;
 
-  @override
-  String toString() {
-    return _valor.toString();
-  }
-
-  bool operator >(BigDecimal segundoNumero) => _valor > segundoNumero._valor;
-
-  bool operator <(BigDecimal segundoNumero) => _valor < segundoNumero._valor;
-
-  bool operator >=(BigDecimal segundoNumero) => _valor >= segundoNumero._valor;
-
-  bool operator <=(BigDecimal segundoNumero) => _valor <= segundoNumero._valor;
+  bool operator <=(BigDecimal secondValue) => _value <= secondValue._value;
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
           other is BigDecimal &&
               runtimeType == other.runtimeType &&
-              _valor == other._valor;
+              _value == other._value;
 
   @override
-  int get hashCode => _valor.hashCode;
+  int get hashCode => _value.hashCode;
+
+  @override
+  String toString() {
+    return _value.toString();
+  }
+
+  BigDecimal._(this._value);
 }
