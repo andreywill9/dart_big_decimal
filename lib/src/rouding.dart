@@ -13,6 +13,8 @@ abstract class Rounding {
         return _roundHalfEven(value, decimalPlaces);
       case RoundingMode.HALF_DOWN:
         return _roundHalfDown(value, decimalPlaces);
+      case RoundingMode.HALF_UP:
+        return _roundHalfUp(value, decimalPlaces);
       default:
       // NOT IMPLEMENTED YET
         return BigDecimal.fromDouble(value.toDouble());
@@ -43,6 +45,16 @@ abstract class Rounding {
     Decimal roundedFractionalPart = ((fractionalPart * fractionalMultiple).floor() / fractionalMultiple);
     if (nextToLast <= 5) return BigDecimal.fromDouble((integralPart + roundedFractionalPart).toDouble());
     roundedFractionalPart = _carryLatest(roundedFractionalPart, decimalPlaces);
+    return BigDecimal.fromDouble((integralPart + roundedFractionalPart).toDouble());
+  }
+
+  static BigDecimal _roundHalfUp(Decimal value, int decimalPlaces) {
+    Decimal integralPart = value.truncate();
+    Decimal fractionalPart = _getFractionalPart(value);
+    int nextToLast = _getNextToLast(fractionalPart, decimalPlaces);
+    Decimal fractionalMultiple = _powOfTen(decimalPlaces);
+    Decimal roundedFractionalPart = ((fractionalPart * fractionalMultiple).floor() / fractionalMultiple);
+    if (nextToLast >= 5) roundedFractionalPart = _carryLatest(roundedFractionalPart, decimalPlaces);
     return BigDecimal.fromDouble((integralPart + roundedFractionalPart).toDouble());
   }
 
