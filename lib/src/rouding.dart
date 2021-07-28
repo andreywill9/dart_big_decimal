@@ -15,6 +15,8 @@ abstract class Rounding {
         return _roundHalfDown(value, decimalPlaces);
       case RoundingMode.HALF_UP:
         return _roundHalfUp(value, decimalPlaces);
+      case RoundingMode.ROUND_UP:
+        return _roundUp(value, decimalPlaces);
       default:
       // NOT IMPLEMENTED YET
         return BigDecimal.fromDouble(value.toDouble());
@@ -26,7 +28,7 @@ abstract class Rounding {
     Decimal fractionalPart = _getFractionalPart(value);
     int nextToLast = _getNextToLast(fractionalPart, decimalPlaces);
     Decimal fractionalMultiple = _powOfTen(decimalPlaces);
-    Decimal roundedFractionalPart = ((fractionalPart * fractionalMultiple).floor() / fractionalMultiple);
+    Decimal roundedFractionalPart = ((fractionalPart * fractionalMultiple).truncate() / fractionalMultiple);
     bool hasRemainder = _getFractionalPart(fractionalPart * _powOfTen(decimalPlaces + 1)) != Decimal.zero;
     if (nextToLast < 5) return BigDecimal.fromDouble((integralPart + roundedFractionalPart).toDouble());
     if (nextToLast > 5 || hasRemainder) roundedFractionalPart = _carryLatest(roundedFractionalPart, decimalPlaces);
@@ -42,7 +44,7 @@ abstract class Rounding {
     Decimal fractionalPart = _getFractionalPart(value);
     int nextToLast = _getNextToLast(fractionalPart, decimalPlaces);
     Decimal fractionalMultiple = _powOfTen(decimalPlaces);
-    Decimal roundedFractionalPart = ((fractionalPart * fractionalMultiple).floor() / fractionalMultiple);
+    Decimal roundedFractionalPart = ((fractionalPart * fractionalMultiple).truncate() / fractionalMultiple);
     if (nextToLast <= 5) return BigDecimal.fromDouble((integralPart + roundedFractionalPart).toDouble());
     roundedFractionalPart = _carryLatest(roundedFractionalPart, decimalPlaces);
     return BigDecimal.fromDouble((integralPart + roundedFractionalPart).toDouble());
@@ -53,8 +55,17 @@ abstract class Rounding {
     Decimal fractionalPart = _getFractionalPart(value);
     int nextToLast = _getNextToLast(fractionalPart, decimalPlaces);
     Decimal fractionalMultiple = _powOfTen(decimalPlaces);
-    Decimal roundedFractionalPart = ((fractionalPart * fractionalMultiple).floor() / fractionalMultiple);
+    Decimal roundedFractionalPart = ((fractionalPart * fractionalMultiple).truncate() / fractionalMultiple);
     if (nextToLast >= 5) roundedFractionalPart = _carryLatest(roundedFractionalPart, decimalPlaces);
+    return BigDecimal.fromDouble((integralPart + roundedFractionalPart).toDouble());
+  }
+
+  static BigDecimal _roundUp(Decimal value, int decimalPlaces) {
+    Decimal integralPart = value.truncate();
+    Decimal fractionalPart = _getFractionalPart(value);
+    int nextToLast = _getNextToLast(fractionalPart, decimalPlaces);
+    if (nextToLast == 0) return BigDecimal.fromDouble(value.toDouble());
+    Decimal roundedFractionalPart = _carryLatest(fractionalPart, decimalPlaces);
     return BigDecimal.fromDouble((integralPart + roundedFractionalPart).toDouble());
   }
 
