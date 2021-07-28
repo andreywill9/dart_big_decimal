@@ -20,7 +20,7 @@ class BigDecimal {
   
   static BigDecimal fromDouble(double valor) => BigDecimal._(Decimal.parse(valor.toString()));
 
-  BigDecimal multiply(BigDecimal secondValue, RoundingMode roundingMode) {
+  BigDecimal multiply(BigDecimal secondValue) {
     Decimal result = _value * secondValue._value;
     return BigDecimal._(result);
   }
