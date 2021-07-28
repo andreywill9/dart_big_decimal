@@ -65,6 +65,17 @@ class BigDecimal {
     Decimal result = _value.pow(exponent);
     return Rounding.round(result, roundingMode, decimalPlaces);
   }
+
+  int intValue() => _value.toInt();
+
+  double doubleValue() => _value.toDouble();
+
+  int signum() {
+    if (_value == Decimal.zero) return 0;
+    return _value > Decimal.zero
+        ? 1 :
+        -1;
+  }
   
   int compareTo(BigDecimal secondValue) => _value.compareTo(secondValue._value);
 
