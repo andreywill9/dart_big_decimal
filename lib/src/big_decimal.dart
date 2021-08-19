@@ -17,8 +17,10 @@ class BigDecimal {
   static final BigDecimal TEN = fromDouble(10);
 
   static final BigDecimal ONE_HUNDRED = fromDouble(100);
-  
-  static BigDecimal fromDouble(double valor) => BigDecimal._(Decimal.parse(valor.toString()));
+
+  static BigDecimal fromDouble(double value) => BigDecimal._(Decimal.parse(value.toString()));
+
+  static BigDecimal fromString(String value) => BigDecimal._(Decimal.parse(value));
 
   BigDecimal multiply(BigDecimal secondValue) {
     Decimal result = _value * secondValue._value;
@@ -55,16 +57,15 @@ class BigDecimal {
 
   BigDecimal min(BigDecimal secondValue) => secondValue._value < _value ? secondValue : this;
 
-  BigDecimal movePointToLeft(int places) => BigDecimal._(_value * (TEN.pow(places * -1, RoundingMode.ROUND_DOWN, 0))._value);
+  BigDecimal movePointToLeft(int places, [int decimalPlaces = 2]) =>
+      Rounding.round(_value * (TEN.pow(places * -1))._value, RoundingMode.ROUND_DOWN, decimalPlaces);
 
-  BigDecimal movePointToRight(int places) => BigDecimal._(_value * (TEN.pow(places, RoundingMode.ROUND_DOWN, 0))._value);
+  BigDecimal movePointToRight(int places, [int decimalPlaces = 2]) =>
+      Rounding.round(_value * (TEN.pow(places))._value, RoundingMode.ROUND_DOWN, decimalPlaces);
 
   BigDecimal abs() => BigDecimal._(_value.abs());
 
-  BigDecimal pow(int exponent, RoundingMode roundingMode, [int decimalPlaces = 2]) {
-    Decimal result = _value.pow(exponent);
-    return Rounding.round(result, roundingMode, decimalPlaces);
-  }
+  BigDecimal pow(int exponent) => BigDecimal._(_value.pow(exponent));
 
   int intValue() => _value.toInt();
 
@@ -73,10 +74,10 @@ class BigDecimal {
   int signum() {
     if (_value == Decimal.zero) return 0;
     return _value > Decimal.zero
-        ? 1 :
-        -1;
+        ? 1
+        : -1;
   }
-  
+
   int compareTo(BigDecimal secondValue) => _value.compareTo(secondValue._value);
 
   bool operator >(BigDecimal secondValue) => _value > secondValue._value;
