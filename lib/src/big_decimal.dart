@@ -1,107 +1,124 @@
 library big_decimal;
 
-
-import 'package:big_decimal/big_decimal.dart';
-import 'package:decimal/decimal.dart';
-
-import 'rouding.dart';
-import 'rounding_mode.dart';
+import 'dart:math' as math;
 
 class BigDecimal {
-  final Decimal _value;
+  
+  final BigInt significant;
 
-  static final BigDecimal ZERO = fromDouble(0);
+  final int scale;
 
-  static final BigDecimal ONE = fromDouble(1);
+  static final BigDecimal ZERO = BigDecimal.fromString("0");
 
-  static final BigDecimal TEN = fromDouble(10);
+  static final BigDecimal ONE = BigDecimal.fromString("1");
 
-  static final BigDecimal ONE_HUNDRED = fromDouble(100);
+  static final BigDecimal TEN = BigDecimal.fromString("10");
 
-  static BigDecimal fromDouble(double value) => BigDecimal._(Decimal.parse(value.toString()));
+  static final BigDecimal ONE_HUNDRED = BigDecimal.fromString("100");
 
-  static BigDecimal fromString(String value) => BigDecimal._(Decimal.parse(value));
-
-  BigDecimal multiply(BigDecimal secondValue) {
-    Decimal result = _value * secondValue._value;
-    return BigDecimal._(result);
+  static BigInt _calculateSignificant(String value) {
+    String valueWOPoint = value.replaceAll(".", "");
+    return BigInt.parse(valueWOPoint);
   }
 
-  BigDecimal divide(BigDecimal secondValue, RoundingMode roundingMode, [int decimalPlaces = 2]) {
-    Decimal result = _value / secondValue._value;
-    return Rounding.round(result, roundingMode, decimalPlaces);
+  static int _calculateScale(String value, BigInt significant) {
+    int scale = significant == BigInt.zero
+        ? 0
+        : (math.log(num.parse(value).abs() / significant.abs().toInt()) / math.ln10).round();
+    scale += _zeroCount(value, scale.abs());
+    return significant.isNegative ? -scale : scale;
   }
 
-  BigDecimal add(BigDecimal secondValue) {
-    Decimal result = _value + secondValue._value;
-    return BigDecimal._(result);
+  static int _zeroCount(String value, int scale) {
+    List<String> split = value.split(".");
+    if (split.length == 1) return 0;
+    return split[1].substring(scale).length;
   }
 
-  BigDecimal subtract(BigDecimal secondValue) {
-    Decimal result = _value - secondValue._value;
-    return BigDecimal._(result);
+  factory BigDecimal.fromString(String value) {
+    BigInt significant = _calculateSignificant(value);
+    int scale = _calculateScale(value, significant);
+    return BigDecimal._(significant, scale);
   }
 
-  BigDecimal getPercentage(BigDecimal percentage, RoundingMode roundingMode, [int decimalPlaces = 2]) {
-    Decimal multiplicacao = _value * percentage._value;
-    return BigDecimal._(multiplicacao).divide(ONE_HUNDRED, roundingMode, decimalPlaces);
+  BigDecimal multiply(BigDecimal multiplicand) {
+    int finalScale = scale + multiplicand.scale;
+    BigInt finalSignificant = significant * multiplicand.significant;
+    return BigDecimal._(finalSignificant, finalScale);
   }
 
-  BigDecimal remainder(BigDecimal secondValue) => BigDecimal._(_value % secondValue._value);
+  // BigDecimal divide(BigDecimal divisor, RoundingMode roundingMode) {
+  //   int finalScale = scale - divisor.scale;
+  //   Decimal result = _value / divisor._value;
+  //   return Rounding.round(result, roundingMode, decimalPlaces);
+  // }
 
-  BigDecimal divideToIntegralValue(BigDecimal secondValue) => BigDecimal._(_value ~/ secondValue._value);
+  BigDecimal add(BigDecimal augend) {
+    BigInt biggerSignificant = max(augend).significant;
+    BigInt otherSignificant = biggerSignificant == significant ? augend.significant : significant;
+    int scaleDiff = (scale.abs() - augend.scale.abs()).abs();
+    int finalScale = scale.abs() > augend.scale.abs()
+        ? scale
+        : augend.scale;
+    biggerSignificant *= BigInt.from(math.pow(10, scaleDiff));
+    return BigDecimal._((biggerSignificant + otherSignificant), finalScale);
+  }
 
-  BigDecimal negate() => BigDecimal._(-_value);
+  BigDecimal subtract(BigDecimal subtrahend) {
+    int scaleDiff = (scale.abs() - subtrahend.scale.abs()).abs();
+    int finalScale = scale.abs() > subtrahend.scale.abs()
+        ? scale
+        : subtrahend.scale;
+    BigInt minuendSignificant = significant;
+    BigInt subtrahendSignificant = subtrahend.significant;
+    if (minuendSignificant == max(subtrahend).significant)
+      minuendSignificant *= BigInt.from(math.pow(10, scaleDiff));
+    else subtrahendSignificant *= BigInt.from(math.pow(10, scaleDiff));
+    return BigDecimal._((minuendSignificant - subtrahendSignificant), finalScale);
+  }
 
-  BigDecimal max(BigDecimal secondValue) => secondValue._value > _value ? secondValue : this;
+  // BigDecimal getPercentage(BigDecimal percentage, RoundingMode roundingMode, [int decimalPlaces = 2]) {
+  //   Decimal multiplicacao = _value * percentage._value;
+  //   return BigDecimal._(multiplicacao).divide(ONE_HUNDRED, roundingMode, decimalPlaces);
+  // }
+  //
+  // BigDecimal remainder(BigDecimal secondValue) => BigDecimal._(_value % secondValue._value);
+  //
+  // BigDecimal divideToIntegralValue(BigDecimal secondValue) => BigDecimal._(_value ~/ secondValue._value);
 
-  BigDecimal min(BigDecimal secondValue) => secondValue._value < _value ? secondValue : this;
+  BigDecimal negate() => BigDecimal._(-significant, scale);
 
-  BigDecimal movePointToLeft(int places, [int decimalPlaces = 2]) =>
-      Rounding.round(_value * (TEN.pow(places * -1))._value, RoundingMode.ROUND_DOWN, decimalPlaces);
+  BigDecimal max(BigDecimal secondValue) => secondValue.doubleValue() > doubleValue()
+      ? secondValue
+      : this;
 
-  BigDecimal movePointToRight(int places, [int decimalPlaces = 2]) =>
-      Rounding.round(_value * (TEN.pow(places))._value, RoundingMode.ROUND_DOWN, decimalPlaces);
+  BigDecimal min(BigDecimal secondValue) => secondValue.doubleValue() < doubleValue()
+      ? secondValue
+      : this;
 
-  BigDecimal abs() => BigDecimal._(_value.abs());
+  BigDecimal movePointToLeft(int places) => BigDecimal._(significant, scale - places);
 
-  BigDecimal pow(int exponent) => BigDecimal._(_value.pow(exponent));
+  BigDecimal movePointToRight(int places) => BigDecimal._(significant, scale + places);
 
-  int intValue() => _value.toInt();
+  BigDecimal abs() => BigDecimal._(significant.abs(), scale);
 
-  double doubleValue() => _value.toDouble();
+  // BigDecimal pow(int exponent) => BigDecimal._(_value.pow(exponent));
+
+  int intValue() => doubleValue().truncate();
+
+  double doubleValue() => (significant.toInt() * math.pow(10, scale)).toDouble();
 
   int signum() {
-    if (_value == Decimal.zero) return 0;
-    return _value > Decimal.zero
+    if (significant == BigInt.zero) return 0;
+    return significant > BigInt.zero
         ? 1
         : -1;
   }
 
-  int compareTo(BigDecimal secondValue) => _value.compareTo(secondValue._value);
-
-  bool operator >(BigDecimal secondValue) => _value > secondValue._value;
-
-  bool operator <(BigDecimal secondValue) => _value < secondValue._value;
-
-  bool operator >=(BigDecimal secondValue) => _value >= secondValue._value;
-
-  bool operator <=(BigDecimal secondValue) => _value <= secondValue._value;
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-          other is BigDecimal &&
-              runtimeType == other.runtimeType &&
-              _value == other._value;
-
-  @override
-  int get hashCode => _value.hashCode;
-
   @override
   String toString() {
-    return _value.toString();
+    return (significant.toInt() * math.pow(10, scale)).toString();
   }
 
-  BigDecimal._(this._value);
+  BigDecimal._(this.significant, this.scale);
 }
