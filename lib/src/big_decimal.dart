@@ -4,9 +4,9 @@ import 'dart:math' as math;
 
 class BigDecimal {
   
-  final BigInt significant;
+  final BigInt _significant;
 
-  final int scale;
+  final int _scale;
 
   static final BigDecimal ZERO = BigDecimal.fromString("0");
 
@@ -42,8 +42,8 @@ class BigDecimal {
   }
 
   BigDecimal multiply(BigDecimal multiplicand) {
-    int finalScale = scale + multiplicand.scale;
-    BigInt finalSignificant = significant * multiplicand.significant;
+    int finalScale = _scale + multiplicand._scale;
+    BigInt finalSignificant = _significant * multiplicand._significant;
     return BigDecimal._(finalSignificant, finalScale);
   }
 
@@ -54,24 +54,24 @@ class BigDecimal {
   // }
 
   BigDecimal add(BigDecimal augend) {
-    BigInt biggerSignificant = max(augend).significant;
-    BigInt otherSignificant = biggerSignificant == significant ? augend.significant : significant;
-    int scaleDiff = (scale.abs() - augend.scale.abs()).abs();
-    int finalScale = scale.abs() > augend.scale.abs()
-        ? scale
-        : augend.scale;
+    BigInt biggerSignificant = max(augend)._significant;
+    BigInt otherSignificant = biggerSignificant == _significant ? augend._significant : _significant;
+    int scaleDiff = (_scale.abs() - augend._scale.abs()).abs();
+    int finalScale = _scale.abs() > augend._scale.abs()
+        ? _scale
+        : augend._scale;
     biggerSignificant *= BigInt.from(math.pow(10, scaleDiff));
     return BigDecimal._((biggerSignificant + otherSignificant), finalScale);
   }
 
   BigDecimal subtract(BigDecimal subtrahend) {
-    int scaleDiff = (scale.abs() - subtrahend.scale.abs()).abs();
-    int finalScale = scale.abs() > subtrahend.scale.abs()
-        ? scale
-        : subtrahend.scale;
-    BigInt minuendSignificant = significant;
-    BigInt subtrahendSignificant = subtrahend.significant;
-    if (minuendSignificant == max(subtrahend).significant)
+    int scaleDiff = (_scale.abs() - subtrahend._scale.abs()).abs();
+    int finalScale = _scale.abs() > subtrahend._scale.abs()
+        ? _scale
+        : subtrahend._scale;
+    BigInt minuendSignificant = _significant;
+    BigInt subtrahendSignificant = subtrahend._significant;
+    if (minuendSignificant == max(subtrahend)._significant)
       minuendSignificant *= BigInt.from(math.pow(10, scaleDiff));
     else subtrahendSignificant *= BigInt.from(math.pow(10, scaleDiff));
     return BigDecimal._((minuendSignificant - subtrahendSignificant), finalScale);
@@ -86,7 +86,7 @@ class BigDecimal {
   //
   // BigDecimal divideToIntegralValue(BigDecimal secondValue) => BigDecimal._(_value ~/ secondValue._value);
 
-  BigDecimal negate() => BigDecimal._(-significant, scale);
+  BigDecimal negate() => BigDecimal._(-_significant, _scale);
 
   BigDecimal max(BigDecimal secondValue) => secondValue.doubleValue() > doubleValue()
       ? secondValue
@@ -96,29 +96,34 @@ class BigDecimal {
       ? secondValue
       : this;
 
-  BigDecimal movePointToLeft(int places) => BigDecimal._(significant, scale - places);
+  BigDecimal movePointToLeft(int places) => BigDecimal._(_significant, _scale - places);
 
-  BigDecimal movePointToRight(int places) => BigDecimal._(significant, scale + places);
+  BigDecimal movePointToRight(int places) => BigDecimal._(_significant, _scale + places);
 
-  BigDecimal abs() => BigDecimal._(significant.abs(), scale);
+  BigDecimal abs() => BigDecimal._(_significant.abs(), _scale);
 
   // BigDecimal pow(int exponent) => BigDecimal._(_value.pow(exponent));
 
+  BigInt toBigInt() {
+    String significant = this._significant.toString();
+    return BigInt.parse(significant.substring(0, significant.length - _scale.abs()));
+  }
+
   int intValue() => doubleValue().truncate();
 
-  double doubleValue() => (significant.toInt() * math.pow(10, scale)).toDouble();
+  double doubleValue() => (_significant.toInt() * math.pow(10, _scale)).toDouble();
 
   int signum() {
-    if (significant == BigInt.zero) return 0;
-    return significant > BigInt.zero
+    if (_significant == BigInt.zero) return 0;
+    return _significant > BigInt.zero
         ? 1
         : -1;
   }
 
   @override
   String toString() {
-    return (significant.toInt() * math.pow(10, scale)).toString();
+    return (_significant.toInt() * math.pow(10, _scale)).toString();
   }
 
-  BigDecimal._(this.significant, this.scale);
+  BigDecimal._(this._significant, this._scale);
 }
